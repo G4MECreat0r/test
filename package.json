@@ -1,0 +1,16 @@
+{
+  "name": "discord-announce-server",
+  "version": "1.0.0",
+  "description": "Discord → GitHub Pages リアルタイムアナウンスサーバー",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "ws": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
