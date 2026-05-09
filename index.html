@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📢 アナウンス</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #1a1d26;
+    --border: #2a2d3a;
+    --accent: #5865f2;
+    --accent2: #eb459e;
+    --gold: #faa61a;
+    --text: #e8eaf0;
+    --muted: #72767d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ヘッダー */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(13,15,20,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .logo span { color: var(--accent); }
+
+  #status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  #status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background .4s;
+  }
+  #status-dot.connected { background: #57f287; box-shadow: 0 0 8px #57f287; }
+  #status-dot.error     { background: #ed4245; }
+
+  /* メインエリア */
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 96px 20px 60px;
+  }
+
+  /* 最新アナウンス (大きく表示) */
+  #latest-wrap {
+    margin-bottom: 36px;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #latest {
+    width: 100%;
+    background: linear-gradient(135deg, #1e2236, #12141e);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 28px 32px;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity .5s, transform .5s;
+    box-shadow: 0 0 40px rgba(88,101,242,.15);
+  }
+  #latest.visible { opacity: 1; transform: translateY(0); }
+
+  #latest::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .latest-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .latest-badge::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:.4; transform:scale(1.5); }
+  }
+
+  #latest-content {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  #latest-meta {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  #latest-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--border);
+    object-fit: cover;
+  }
+
+  /* 過去ログ */
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #log {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .log-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    animation: slideIn .35s ease forwards;
+    opacity: 0;
+  }
+  @keyframes slideIn {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .log-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+
+  .log-body { flex: 1; min-width: 0; }
+  .log-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .log-author { font-weight: 700; font-size: 14px; color: var(--accent); }
+  .log-time   { font-size: 11px; color: var(--muted); }
+  .log-text   { font-size: 14px; line-height: 1.55; word-break: break-word; }
+
+  /* 接続待ち */
+  #empty {
+    text-align: center;
+    color: var(--muted);
+    font-size: 15px;
+    padding: 60px 20px;
+  }
+  #empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* 設定モーダル */
+  #cfg-btn {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 44px; height: 44px;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted);
+    transition: color .2s, border-color .2s;
+  }
+  #cfg-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  #cfg-modal {
+    display: none;
+    position: fixed;
+    bottom: 76px; right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    width: 300px;
+    z-index: 200;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  }
+  #cfg-modal h3 { font-size: 14px; margin-bottom: 14px; color: var(--text); }
+  #cfg-modal label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+  #cfg-modal input {
+    width: 100%; padding: 8px 10px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 13px;
+    margin-bottom: 12px; outline: none;
+  }
+  #cfg-modal input:focus { border-color: var(--accent); }
+  #save-btn {
+    width: 100%; padding: 9px;
+    background: var(--accent); border: none;
+    border-radius: 7px; color: #fff;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer;
+  }
+  #save-btn:hover { background: #4752c4; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📢 <span>LIVE</span> アナウンス</div>
+  <div id="status">
+    <div id="status-dot"></div>
+    <span id="status-text">接続中...</span>
+  </div>
+</header>
+
+<main>
+  <div id="latest-wrap">
+    <div id="empty">
+      <div class="icon">💬</div>
+      <div>#announce チャンネルにメッセージを送ると<br>ここにリアルタイムで表示されます</div>
+    </div>
+    <div id="latest" style="display:none">
+      <div class="latest-badge">最新アナウンス</div>
+      <div id="latest-content"></div>
+      <div id="latest-meta">
+        <img id="latest-avatar" src="" alt="">
+        <span id="latest-author"></span>
+        <span id="latest-time"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="log-section" style="display:none">
+    <div class="section-title">過去のアナウンス</div>
+    <div id="log"></div>
+  </div>
+</main>
+
+<!-- 設定ボタン -->
+<button id="cfg-btn" title="サーバー設定">⚙️</button>
+<div id="cfg-modal">
+  <h3>⚙️ サーバー設定</h3>
+  <label>WebSocket サーバーURL</label>
+  <input id="ws-url-input" type="text" placeholder="wss://your-app.onrender.com">
+  <button id="save-btn">保存して再接続</button>
+</div>
+
+<script>
+// ---- 設定 ----
+// ★ ここをRenderのURLに書き換えてください
+let WS_URL = localStorage.getItem('ws_url') || 'wss://YOUR_APP_NAME.onrender.com';
+
+const MAX_LOG = 20;
+const announces = [];
+let ws = null;
+
+// ---- DOM ----
+const statusDot  = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+const latestEl   = document.getElementById('latest');
+const emptyEl    = document.getElementById('empty');
+const latestContent = document.getElementById('latest-content');
+const latestAuthor  = document.getElementById('latest-author');
+const latestAvatar  = document.getElementById('latest-avatar');
+const latestTime    = document.getElementById('latest-time');
+const logEl         = document.getElementById('log');
+const logSection    = document.getElementById('log-section');
+
+// ---- 設定モーダル ----
+const cfgBtn   = document.getElementById('cfg-btn');
+const cfgModal = document.getElementById('cfg-modal');
+const wsInput  = document.getElementById('ws-url-input');
+const saveBtn  = document.getElementById('save-btn');
+
+wsInput.value = WS_URL;
+cfgBtn.addEventListener('click', ()=>{
+  cfgModal.style.display = cfgModal.style.display==='block' ? 'none' : 'block';
+});
+saveBtn.addEventListener('click', ()=>{
+  WS_URL = wsInput.value.trim();
+  localStorage.setItem('ws_url', WS_URL);
+  cfgModal.style.display = 'none';
+  connect();
+});
+
+// ---- 時刻フォーマット ----
+function formatTime(iso){
+  const d = new Date(iso);
+  return d.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'});
+}
+
+// ---- アナウンス表示 ----
+function showAnnounce(data){
+  announces.unshift(data);
+
+  // 最新枠
+  emptyEl.style.display = 'none';
+  latestEl.style.display = 'block';
+  latestEl.classList.remove('visible');
+  void latestEl.offsetWidth; // reflow
+  latestEl.classList.add('visible');
+  latestContent.textContent = data.content;
+  latestAuthor.textContent  = data.author;
+  latestTime.textContent    = formatTime(data.timestamp);
+  if(data.avatar && data.avatar.includes('null')){
+    latestAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.author)}&background=5865f2&color=fff&size=56`;
+  } else {
+    latestAvatar.src = data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.author)}&background=5865f2&color=fff`;
+    latestAvatar.onerror = ()=>{ latestAvatar.src=`https://ui-avatars.com/api/?name=${encodeURIComponent(data.author)}&background=5865f2&color=fff`; };
+  }
+
+  // ログに追加（2件目以降）
+  if(announces.length > 1){
+    logSection.style.display = 'block';
+    const prev = announces[1];
+    const item = document.createElement('div');
+    item.className = 'log-item';
+    const avatarSrc = (prev.avatar && !prev.avatar.includes('null'))
+      ? prev.avatar
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(prev.author)}&background=5865f2&color=fff`;
+    item.innerHTML = `
+      <img class="log-avatar" src="${avatarSrc}" alt="" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(prev.author)}&background=5865f2&color=fff'">
+      <div class="log-body">
+        <div class="log-header">
+          <span class="log-author">${escHtml(prev.author)}</span>
+          <span class="log-time">${formatTime(prev.timestamp)}</span>
+        </div>
+        <div class="log-text">${escHtml(prev.content)}</div>
+      </div>`;
+    logEl.insertBefore(item, logEl.firstChild);
+    // 古いログを削除
+    while(logEl.children.length > MAX_LOG) logEl.removeChild(logEl.lastChild);
+  }
+
+  // タイトル点滅
+  document.title = '📢 ' + data.content.slice(0,20) + (data.content.length>20?'…':'');
+  setTimeout(()=>{ document.title='📢 アナウンス'; }, 5000);
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---- WebSocket 接続 ----
+function setStatus(type, text){
+  statusDot.className = type;
+  statusText.textContent = text;
+}
+
+function connect(){
+  if(ws){ ws.onclose=null; ws.close(); }
+  setStatus('', '接続中...');
+  try {
+    ws = new WebSocket(WS_URL);
+  } catch(e) {
+    setStatus('error', 'URL が無効です');
+    return;
+  }
+
+  ws.onopen = ()=>{
+    setStatus('connected', 'リアルタイム受信中');
+  };
+
+  ws.onmessage = (ev)=>{
+    try {
+      const data = JSON.parse(ev.data);
+      if(data.type === 'announce') showAnnounce(data);
+    } catch(e) {}
+  };
+
+  ws.onclose = ()=>{
+    setStatus('error', '切断 — 再接続中...');
+    setTimeout(connect, 4000);
+  };
+
+  ws.onerror = ()=>{
+    setStatus('error', 'エラー');
+  };
+}
+
+connect();
+</script>
+</body>
+</html>
